@@ -1,0 +1,18 @@
+{
+    "name": "sifat/web_srapping_curl",
+    "description": "This is script to scrape data from website which has returns html at initial page load",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Sifat\\WebScrapingCurl\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "TareqSifat",
+            "email": "mdtareq.me@gmail.com"
+        }
+    ],
+    "minimum-stability": "alpha"
+}
