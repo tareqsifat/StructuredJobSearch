@@ -36,6 +36,7 @@ class UploadJobsController extends BaseController
             // decode the JSON once
             $decoded = json_decode($checked['content'], true);
             if ($decoded['status'] === false) {
+                LogFactory::saveLog($decoded['message']);
                 return $decoded['message'];
             }
         } 
