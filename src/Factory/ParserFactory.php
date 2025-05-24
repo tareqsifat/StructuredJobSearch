@@ -15,6 +15,8 @@ class ParserFactory {
                 return new JobDetailsParser();
             case 'title':
                 return new TitleParser();
+            case 'pagination':
+                return new PaginationParser();
             default:
                 throw new Exception("Invalid parser type: $type");
         }

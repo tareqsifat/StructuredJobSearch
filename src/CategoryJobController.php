@@ -16,6 +16,7 @@ class CategoryJobController extends BaseController
     private $categorizedJobListJson;
     private $categorizedJobDetails;
     private $categorizedJobDetailsJsonFolder;
+    private $jobSource;
     public function __construct()
     {
         parent::__construct();
@@ -24,7 +25,7 @@ class CategoryJobController extends BaseController
         $this->categorizedJobListJson = $this->SavedJson . DIRECTORY_SEPARATOR . 'categorized-job-list.json';
         $this->categorizedJobDetails = $this->SavedHtml . DIRECTORY_SEPARATOR . 'categorizedJobDetails';
         $this->categorizedJobDetailsJsonFolder = $this->SavedJson . DIRECTORY_SEPARATOR . 'categorizedJobDetails';
-
+        $this->jobSource = 'bdjobs';
     }
     public function saveCategorizedJobs(){
         $jsonData = file_get_contents($this->jsonFile);
@@ -80,38 +81,31 @@ class CategoryJobController extends BaseController
     }
     public function getAllCategoryJobs($url){
         $category_page = $this->call_curl($url . '&pg=' . 1);
-        $dom = new DOMDocument();
-        libxml_use_internal_errors(true);
-        $dom->loadHTML($category_page['content']);
-        libxml_clear_errors();
-        $xpath = new DOMXPath($dom);
-
-        // grab all the <li> under <div class="pagination" id="topPagging">
-        $liNodes = $xpath->query(
-            "//div[@class='pagination' and @id='topPagging']//ul/li"
-        );
-
-        // get the count
-        $liCount = $liNodes->length;
-        for($i=2;$i<=$liCount;$i++){
+        $paginationParser = ParserFactory::createParser('pagination');
+        $page_count = $paginationParser->parse($category_page['content']);
+        echo  $page_count;
+        $allJobLinks = [];
+        for($i=2;$i<=$page_count;$i++){
             $category_page = $this->call_curl($url . '&pg=' . $i);
             $titleParser = ParserFactory::createParser('title');
             $title = $titleParser->parse($category_page['content']);
             if(isset($category_page['content']) && !empty($category_page['content'])){
                 $message = "Content of $title.html is retrieved successfully\n";
-                echo $message . __FILE__ . __LINE__;
                 LogFactory::saveLog($message);
-                return $category_page['content'];
+                $links = $this->saveAllJobLinks($category_page['content']) ?? [];
+
+                // Merge flat results instead of pushing a nested array
+                $allJobLinks = array_merge($allJobLinks, $links);
             } else {
                 $message = "Content of the $url can not be downloaded\n";
                 LogFactory::saveLog($message);
-                return false;
             }
-            $random_sleep = rand(10, 40);
+            $random_sleep = rand(5, 15);
             echo "\n<br> Script will sleep for $random_sleep<br>\n";
             // break;
             sleep($random_sleep);
         }
+        return $allJobLinks;
     }
     public function saveAllJobLinks($htmlContent){
         $links = [];
@@ -147,18 +141,14 @@ class CategoryJobController extends BaseController
             if (!is_dir($this->categorizedJobDetails)) {
                 mkdir($this->categorizedJobDetails, 0777, true);
             }
-            $categorizedJobDetailsPath = $this->categorizedJobDetails . DIRECTORY_SEPARATOR . $title . '-' .$key. '.html';
-            if (file_put_contents($categorizedJobDetailsPath, $job_details_page['content']) !== false) {
-                $jobDetailsParser = ParserFactory::createParser('jobdetails');
-                $details = $jobDetailsParser->parse($job_details_page['content']);
-                $message = "File: $title-$key.html saved successfully to : $categorizedJobDetailsPath\n";
-                echo $message;
-                LogFactory::saveLog($message);
-            }else {
-                LogFactory::saveLog("categorizedJobDetails Page Save failed");
+            $jobDetailsParser = ParserFactory::createParser('jobdetails');
+            $details = $jobDetailsParser->parse($job_details_page['content']);
+            if (empty($details)) {
+                LogFactory::saveLog("Job details not found for URL: $url");
+                continue; // Skip this iteration if no details found
             }
             // decide on one JSON file
-            $jsonFile = $this->categorizedJobDetailsJsonFolder . DIRECTORY_SEPARATOR . 'all_jobs.json';
+            $jsonFile = $this->categorizedJobDetailsJsonFolder . DIRECTORY_SEPARATOR . date('Y-m-d') . '-'. Config::get('type') .'_jobs.json';
 
             // make sure the dir exists
             if (!is_dir($this->categorizedJobDetailsJsonFolder)) {
@@ -178,7 +168,8 @@ class CategoryJobController extends BaseController
             }
 
             // add your new job details
-            $details['application_link'] = $url;
+            $details['job_url'] = $url;
+            $details['job_source'] = $this->jobSource;
             $details['id'] = explode('=',explode('&', explode('?', $url)[1])[0])[1];
 
 

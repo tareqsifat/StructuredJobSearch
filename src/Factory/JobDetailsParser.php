@@ -52,7 +52,7 @@ class JobDetailsParser implements Parser
         if(!empty($jobTitle) && !empty($companyName) && $type == 'govt'){
             $job_details['jobTitle'] = $jobTitle;
             $job_details['companyName'] = $companyName;
-            $job_details['imageLink'] = $xpath->query('//div[@class="image"]/img')->item(0)?->getAttribute('src');
+            $job_details['image_link'] = $xpath->query('//div[@class="image"]/img')->item(0)?->getAttribute('src');
             $job_details['is_pdf'] = 'false';
         }
         if($type == 'govt'){
