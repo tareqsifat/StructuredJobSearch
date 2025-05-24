@@ -19,7 +19,7 @@ class UploadJobsController extends BaseController
         $this->detailedJsonFolder = $this->SavedJson . DIRECTORY_SEPARATOR . 'categorizedJobDetails';
         $this->copyDetailedJsonFolder = $this->SavedJson . DIRECTORY_SEPARATOR . 'categorizedJobDetailsUpload';
         $this->jobUploadUrl = 'https://eurostaffs.org/api/upload_scrapped_job_post';
-        $this->checkJobUrl = 'http://eurostaffs.org/api/check_scrapped_job_availability';
+        $this->checkJobUrl = 'https://eurostaffs.org/api/check_scrapped_job_availability';
         $this->api_key = '@Pass123!@#';
     }
     
